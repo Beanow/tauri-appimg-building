@@ -1,0 +1,57 @@
+version: "3.9"
+services:
+  rusty-hello-rs:
+    build:
+      context: ../tools/docker
+      dockerfile: rs.Dockerfile
+    command: |
+      bash -c '
+      cargo build;
+      cp -T target/debug/hello-rs /output/rusty-hello-rs
+      ';
+    volumes:
+      - ../apps/hello-rs:/src:ro
+      - ../output:/output
+      - cache:/src/target
+
+  appimg-hello-rs:
+    build:
+      context: ../tools/docker
+      dockerfile: appimg.Dockerfile
+    command: |
+      bash -c '
+      ./rebuild.sh;
+      set -eux;
+      appimage-builder --generate;
+      cp AppImageBuilder.yml /output
+      ';
+    volumes:
+      - cache:/src/AppDir
+      - ./rebuild.sh:/src/rebuild.sh
+      - ../output:/output
+      - ../icons:/icons
+
+  appimg-hello-rs-build:
+    build:
+      context: ../tools/docker
+      dockerfile: appimg.Dockerfile
+    command: |
+      bash -c '
+      ./rebuild.sh &&
+      set -eux;
+      appimage-builder --skip-tests;
+      cp hello-rs.AppImage /output
+      ';
+    volumes:
+      - cache:/src/AppDir
+      - ./rebuild.sh:/src/rebuild.sh
+      - ./AppImageBuilder.yml:/src/AppImageBuilder.yml
+      - ../output:/output
+      - ../icons:/icons
+
+volumes:
+  cache:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
