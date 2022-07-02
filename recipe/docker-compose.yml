@@ -42,8 +42,8 @@ services:
       set -e;
       yarn;
       yarn build;
-      yarn tauri build --debug --bundles none
-      cp -T src-tauri/target/debug/hello-tauri /output/rusty-hello-tauri
+      yarn tauri build --bundles none
+      cp -T src-tauri/target/release/hello-tauri /output/rusty-hello-tauri
       ';
     volumes:
       - ../apps/hello-tauri:/src
