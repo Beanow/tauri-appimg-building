@@ -1,0 +1,5 @@
+/public/build/
+/.docker-node_modules/*
+!/.docker-node_modules/.gitkeep
+
+.DS_Store

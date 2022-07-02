@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get -yq install \
   binutils coreutils desktop-file-utils fakeroot fuse \
   libgdk-pixbuf2.0-dev patchelf python3-pip python3-setuptools \
-  squashfs-tools strace util-linux zsync wget
+  squashfs-tools strace util-linux zsync wget gtk-update-icon-cache
 
 RUN wget https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage -O /opt/appimagetool \
     && chmod +x /opt/appimagetool \
@@ -26,8 +26,6 @@ RUN set -eux; \
     useradd --uid 1000 --create-home builder; \
     mkdir /src; \
     chown builder:builder /src;
-
-RUN apt-get update && apt-get -yq install gtk-update-icon-cache
 
 USER builder
 WORKDIR /src

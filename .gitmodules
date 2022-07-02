@@ -1,0 +1,3 @@
+[submodule "apps/wry"]
+	path = apps/wry
+	url = https://github.com/tauri-apps/wry.git

@@ -1,6 +1,7 @@
 version: "3.9"
 services:
   rusty-hello-rs:
+    profiles: [build-rs]
     build:
       context: ../tools/docker
       dockerfile: rs.Dockerfile
@@ -14,7 +15,45 @@ services:
       - ../output:/output
       - cache:/src/target
 
+  rusty-wry-example:
+    profiles: [build-rs]
+    build:
+      context: ../tools/docker
+      dockerfile: rs-wry.Dockerfile
+    command: |
+      bash -c '
+      cargo build --example hello_world;
+      cp -T target/debug/examples/hello_world /output/rusty-wry-example
+      ';
+    volumes:
+      - ../apps/wry:/src
+      - ../output:/output
+      - cache:/src/target
+
+  build-tauri-example:
+    profiles: [build-rs]
+    build:
+      context: ../tools/docker
+      dockerfile: build-tauri.Dockerfile
+    environment:
+      CARGO_HOME: /home/builder/.cargo
+    command: |
+      bash --login -c '
+      set -e;
+      yarn;
+      yarn build;
+      yarn tauri build --debug --bundles none
+      cp -T src-tauri/target/debug/hello-tauri /output/rusty-hello-tauri
+      ';
+    volumes:
+      - ../apps/hello-tauri:/src
+      - ../output:/output
+      - ../apps/hello-tauri/.docker-cache/node_modules:/src/node_modules
+      - ../apps/hello-tauri/.docker-cache/target:/src/src-tauri/target
+      - ../apps/hello-tauri/.docker-cache/cargo:/home/builder/.cargo
+
   appimg-hello-rs:
+    profiles: [appimg-generate]
     build:
       context: ../tools/docker
       dockerfile: appimg.Dockerfile
@@ -23,15 +62,60 @@ services:
       ./rebuild.sh;
       set -eux;
       appimage-builder --generate;
-      cp AppImageBuilder.yml /output
+      cp -T AppImageBuilder.yml /output/hello-rs.AppImageBuilder.yml
       ';
     volumes:
       - cache:/src/AppDir
       - ./rebuild.sh:/src/rebuild.sh
       - ../output:/output
       - ../icons:/icons
+  
+  appimg-wry-example:
+    profiles: [appimg-generate]
+    build:
+      context: ../tools/docker
+      dockerfile: appimg-wry.Dockerfile
+    command: |
+      bash -c '
+      ./rebuild.sh wry-example;
+      set -eux;
+      appimage-builder --generate;
+      cp -T AppImageBuilder.yml /output/wry-example.AppImageBuilder.yml
+      ';
+    environment:
+      RUST_BACKTRACE: 1
+      DISPLAY: ${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - cache:/src/AppDir
+      - ./rebuild.sh:/src/rebuild.sh
+      - ../output:/output
+      - ../icons:/icons
+
+  appimg-hello-tauri:
+    profiles: [appimg-generate]
+    build:
+      context: ../tools/docker
+      dockerfile: appimg-wry.Dockerfile
+    command: |
+      bash -c '
+      ./rebuild.sh hello-tauri;
+      set -eux;
+      appimage-builder --generate;
+      cp -T AppImageBuilder.yml /output/hello-tauri.AppImageBuilder.yml
+      ';
+    environment:
+      RUST_BACKTRACE: 1
+      DISPLAY: ${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - cache:/src/AppDir
+      - ./rebuild.sh:/src/rebuild.sh
+      - ../output:/output
+      - ../icons:/icons
 
   appimg-hello-rs-build:
+    profiles: [appimg-build]
     build:
       context: ../tools/docker
       dockerfile: appimg.Dockerfile
@@ -45,7 +129,45 @@ services:
     volumes:
       - cache:/src/AppDir
       - ./rebuild.sh:/src/rebuild.sh
-      - ./AppImageBuilder.yml:/src/AppImageBuilder.yml
+      - ./hello-rs.AppImageBuilder.yml:/src/AppImageBuilder.yml:ro
+      - ../output:/output
+      - ../icons:/icons
+
+  appimg-wry-example-build:
+    profiles: [appimg-build]
+    build:
+      context: ../tools/docker
+      dockerfile: appimg-wry.Dockerfile
+    command: |
+      bash -c '
+      ./rebuild.sh wry-example;
+      set -eux;
+      appimage-builder --skip-tests;
+      cp wry-example.AppImage /output
+      ';
+    volumes:
+      - cache:/src/AppDir
+      - ./rebuild.sh:/src/rebuild.sh
+      - ./wry-example.AppImageBuilder.yml:/src/AppImageBuilder.yml:ro
+      - ../output:/output
+      - ../icons:/icons
+
+  appimg-hello-tauri-build:
+    profiles: [appimg-build]
+    build:
+      context: ../tools/docker
+      dockerfile: appimg-wry.Dockerfile
+    command: |
+      bash -c '
+      ./rebuild.sh hello-tauri;
+      set -eux;
+      appimage-builder --skip-tests;
+      cp hello-tauri.AppImage /output
+      ';
+    volumes:
+      - cache:/src/AppDir
+      - ./rebuild.sh:/src/rebuild.sh
+      - ./hello-tauri.AppImageBuilder.yml:/src/AppImageBuilder.yml:ro
       - ../output:/output
       - ../icons:/icons
 
@@ -55,3 +177,4 @@ volumes:
     driver_opts:
       type: tmpfs
       device: tmpfs
+      o: uid=1000,gid=1000

@@ -4,8 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-    ca-certificates gcc libc6-dev wget;
-
+    ca-certificates gcc libc6-dev wget curl;
 
 ARG RUSTUP_VERSION=1.24.3
 ARG RUSTUP_SHA=3dc5ef50861ee18657f9db2eeb7392f9c2a6c95c90ab41e45ab4ca71476b4338
@@ -32,8 +31,9 @@ RUN set -eux; \
     mkdir /src; \
     chown builder:builder /src;
 
-USER builder
-WORKDIR /src
-
 # Helps save time by populating crates.io index to the current situation.
 RUN cargo search > /dev/null;
+RUN chown -R builder:builder /usr/local/cargo/*;
+
+USER builder
+WORKDIR /src
